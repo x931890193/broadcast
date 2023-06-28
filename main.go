@@ -9,35 +9,30 @@ import (
 )
 
 const (
-	SendPort = 4000
-	RecvPort = 4001
+	BroadCastPort = 4000
+	SendSleep     = 3 * time.Second
 )
 
 var (
-	localAddr  = net.UDPAddr{}
 	remoteAddr = net.UDPAddr{}
 	bindAddr   = net.UDPAddr{}
 )
 
 func init() {
-	localAddr = net.UDPAddr{
-		IP:   net.IPv4(0, 0, 0, 0),
-		Port: SendPort,
-	}
 	remoteAddr = net.UDPAddr{
 		IP:   net.IPv4(255, 255, 255, 255),
-		Port: RecvPort,
+		Port: BroadCastPort,
 	}
 	bindAddr = net.UDPAddr{
 		IP:   net.IPv4(0, 0, 0, 0),
-		Port: RecvPort,
+		Port: BroadCastPort,
 	}
 }
 
 func Sender(wg *sync.WaitGroup) {
 	// send broadcast
 	defer wg.Done()
-	conn, err := net.DialUDP("udp", &localAddr, &remoteAddr)
+	conn, err := net.Dial("udp", remoteAddr.String())
 	if err != nil {
 		println(err.Error())
 		return
@@ -48,12 +43,12 @@ func Sender(wg *sync.WaitGroup) {
 		if err != nil {
 			return
 		}
-		_, err = conn.Write([]byte(`{"name":"` + hostName + `","port":` + fmt.Sprintf("%d", localAddr.Port) + `})`))
+		_, err = conn.Write([]byte(`{"host": "` + hostName + `, "time:"` + time.Now().Format("2006-01-02 15:04:05") + `", "from": "go"}`))
 		if err != nil {
 			println(err.Error())
 			return
 		}
-		time.Sleep(time.Second * 3)
+		time.Sleep(SendSleep)
 	}
 }
 
@@ -66,13 +61,13 @@ func Receiver(wg *sync.WaitGroup) {
 		return
 	}
 	for {
-		var buf [128]byte
+		var buf [1024]byte
 		length, addr, err := conn.ReadFromUDP(buf[:])
 		if err != nil {
 			println(err.Error())
 			return
 		}
-		fmt.Println(string(buf[:length]), addr)
+		fmt.Println("recv: ", string(buf[:length]), addr)
 	}
 }
 
