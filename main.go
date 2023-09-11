@@ -56,12 +56,13 @@ func Sender(wg *sync.WaitGroup) {
 	for {
 		hostName, err := os.Hostname()
 		if err != nil {
-			return
+            println(err.Error())
+            continue
 		}
 		_, err = conn.Write([]byte(`{"host": "` + hostName + `, "time:"` + time.Now().Format("2006-01-02 15:04:05") + `", "from": "go"` + `", "temp": "` + getTemperature() + `"}`))
 		if err != nil {
 			println(err.Error())
-			return
+			continue
 		}
 		time.Sleep(SendSleep)
 	}
@@ -80,7 +81,7 @@ func Receiver(wg *sync.WaitGroup) {
 		length, addr, err := conn.ReadFromUDP(buf[:])
 		if err != nil {
 			println(err.Error())
-			return
+			continue
 		}
 		fmt.Println("recv: ", string(buf[:length]), addr)
 	}
